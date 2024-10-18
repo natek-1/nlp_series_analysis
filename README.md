@@ -31,6 +31,8 @@ Finally, the entire project is integrated into a simple, user-friendly web inter
 Before running the code, make sure you have all the necessary dependencies installed. You can do this by running:
 
 ```bash
+conda create -y -n series_analysis python=3.9
+conda activate series_analysis
 pip install -r requirements.txt
 ```
 
