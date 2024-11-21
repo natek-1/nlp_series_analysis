@@ -40,7 +40,7 @@ pip install -r requirements.txt
 
 The project was run using the following dataset
 * [Naruto Subtitle's](https://subtitlist.com/subs/naruto-season-1/english/2206507)
-* [Naruto Subtitle's](https://www.kaggle.com/datasets/leonzatrax/naruto-ep-1-transcript)
+* [Naruto Transcripts](https://www.kaggle.com/datasets/leonzatrax/naruto-ep-1-transcript)
 * [Classification DataSet](https://naruto.fandom.com/wiki/Special:BrowseData/Jutsu?limit=250&offset=0&_cat=Jutsu)
 
 ## Project Structure
