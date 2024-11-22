@@ -47,10 +47,7 @@ The project was run using the following dataset
 
 ```
 ├── crawler
-│   ├── spiders
-│   └── pipelines.py
-│   └── settings.py
-│   └── ...
+│   ├── technique_crawler.py
 ├── character_network
 │   ├── ner_model.py
 │   ├── network_analysis.py
@@ -74,8 +71,7 @@ Once all dependencies are installed, follow these steps:
 
 1. **Data Scraping**: Start by scraping the necessary data using the `crawler` folder. Navigate to the folder and run the scraper:
     ```bash
-    cd crawler
-    scrapy crawl anime_spider
+    scrapy runspider crawler/technique_crawler.py -o data/justu.jsonl
     ```
 
 2. **Building the Character Network**: Use the `character_network` folder to analyze the relationships between characters. Simply run:

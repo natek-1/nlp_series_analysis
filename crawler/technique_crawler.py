@@ -35,7 +35,7 @@ class BlogSpider(scrapy.Spider):
         soup.find("aside").decompose()
         
         technique_decription = soup.text.strip()
-        technique_decription= technique_decription.split("Trivia").strip()
+        technique_decription= technique_decription.split("Trivia")[0].strip()
         
                     
         
