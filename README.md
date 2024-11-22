@@ -74,19 +74,23 @@ Once all dependencies are installed, follow these steps:
     scrapy runspider crawler/technique_crawler.py -o data/justu.jsonl
     ```
 
-2. **Building the Character Network**: Use the `character_network` folder to analyze the relationships between characters. Simply run:
+
+2. **Theme Extraction**: Classify the main themes of the series using the zero-shot classifier in the `theme_classifier` folder:
     ```bash
+    python -c "import nltk; nltk.download('punkt')"
+    python theme_classifier/zero_shot_classifier.py
+    ```
+
+
+3. **Building the Character Network**: Use the `character_network` folder to analyze the relationships between characters. Simply run:
+    ```bash
+
     python character_network/ner_model.py
     ```
 
-3. **Training the Text Classifier**: Train the text classifier in the `text_classifier` folder by running:
+4. **Training the Text Classifier**: Train the text classifier in the `text_classifier` folder by running:
     ```bash
     python text_classifier/train_classifier.py
-    ```
-
-4. **Theme Extraction**: Classify the main themes of the series using the zero-shot classifier in the `theme_classifier` folder:
-    ```bash
-    python theme_classifier/zero_shot_classifier.py
     ```
 
 5. **Character Chatbot**: Finally, interact with the character chatbot by running:
