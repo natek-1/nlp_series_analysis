@@ -17,4 +17,5 @@ numpy==1.22.4
 scikit-learn==1.3.2
 bs4
 scrapy
+seaborn
 -e .
