@@ -83,8 +83,12 @@ Once all dependencies are installed, follow these steps:
 
 
 3. **Building the Character Network**: Use the `character_network` folder to analyze the relationships between characters. Simply run:
-    ```bash
+This uses a the dataset related to the episode subtitiles,
+Step 1:
 
+
+
+    ```bash
     python character_network/ner_model.py
     ```
 
