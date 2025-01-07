@@ -1,9 +1,8 @@
 from glob import glob 
 import pandas as pd
 
-def load_subtitles_dataset(dataset_path="../../data/subtitles/"):
+def load_subtitles_dataset(dataset_path="data/subtitles/"):
     subtitles_data = glob(dataset_path+"/*.ass")
-    
     scripts = []
     
     for path in subtitles_data:
@@ -19,6 +18,5 @@ def load_subtitles_dataset(dataset_path="../../data/subtitles/"):
         lines = [line.replace('\\N', '') for line in lines]
         script = " ".join(lines)
         scripts.append(script)
-    script = script[:5]
     df = pd.DataFrame.from_dict({"script": scripts})
     return df

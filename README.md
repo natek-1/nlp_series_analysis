@@ -89,6 +89,7 @@ Step 1:
 
 
     ```bash
+    python -m spacy download en_core_web_trf
     python character_network/ner_model.py
     ```
 
