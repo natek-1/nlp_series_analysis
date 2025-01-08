@@ -1,0 +1,444 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 1000px;
+                 height: 700px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 1000px;
+                 height: 700px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white"}, "id": "Akamaru", "label": "Akamaru", "shape": "dot", "size": 15}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Kiba", "label": "Kiba", "shape": "dot", "size": 9}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Naruto", "label": "Naruto", "shape": "dot", "size": 104}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Tsunade", "label": "Tsunade", "shape": "dot", "size": 63}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Shino", "label": "Shino", "shape": "dot", "size": 13}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Akamaruto", "label": "Akamaruto", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Akamarubeing", "label": "Akamarubeing", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Shadow", "label": "Shadow", "shape": "dot", "size": 9}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Hokage", "label": "Hokage", "shape": "dot", "size": 24}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Sakura", "label": "Sakura", "shape": "dot", "size": 24}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "\u2013", "label": "\u2013", "shape": "dot", "size": 13}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Sis", "label": "Sis", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Hana", "label": "Hana", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "sureto", "label": "sureto", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Sasuke", "label": "Sasuke", "shape": "dot", "size": 38}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Narutohe", "label": "Narutohe", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Hinata", "label": "Hinata", "shape": "dot", "size": 23}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Choji", "label": "Choji", "shape": "dot", "size": 28}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Haruna", "label": "Haruna", "shape": "dot", "size": 22}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Yurinojou", "label": "Yurinojou", "shape": "dot", "size": 11}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Janin", "label": "Janin", "shape": "dot", "size": 7}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Janinand", "label": "Janinand", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "and", "label": "and", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Ichiraku", "label": "Ichiraku", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Byakugan", "label": "Byakugan", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Hinataand", "label": "Hinataand", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Jiga", "label": "Jiga", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Ruigaand", "label": "Ruigaand", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "by", "label": "by", "shape": "dot", "size": 7}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Onbu", "label": "Onbu", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Ninjabe", "label": "Ninjabe", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Momiji", "label": "Momiji", "shape": "dot", "size": 7}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Jutsu", "label": "Jutsu", "shape": "dot", "size": 30}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Harunato", "label": "Harunato", "shape": "dot", "size": 7}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Shikamaru", "label": "Shikamaru", "shape": "dot", "size": 14}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "methe", "label": "methe", "shape": "dot", "size": 7}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "princess", "label": "princess", "shape": "dot", "size": 7}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Jiraiya", "label": "Jiraiya", "shape": "dot", "size": 21}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Dojo", "label": "Dojo", "shape": "dot", "size": 14}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Kakashi", "label": "Kakashi", "shape": "dot", "size": 25}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Lee", "label": "Lee", "shape": "dot", "size": 23}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "thatltachi", "label": "thatltachi", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Sannin", "label": "Sannin", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "zu-ma-ki!", "label": "zu-ma-ki!", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Futa", "label": "Futa", "shape": "dot", "size": 9}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Bushy", "label": "Bushy", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Itachi", "label": "Itachi", "shape": "dot", "size": 16}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Onbaa", "label": "Onbaa", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Orochimaru", "label": "Orochimaru", "shape": "dot", "size": 31}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "The", "label": "The", "shape": "dot", "size": 12}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Tsukiko", "label": "Tsukiko", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Chidori", "label": "Chidori", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Guy", "label": "Guy", "shape": "dot", "size": 11}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Kagetsu", "label": "Kagetsu", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Narutoin", "label": "Narutoin", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Shizune", "label": "Shizune", "shape": "dot", "size": 18}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Gaara", "label": "Gaara", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Rasengan", "label": "Rasengan", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Konohamaru", "label": "Konohamaru", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Gamakichi", "label": "Gamakichi", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "the", "label": "the", "shape": "dot", "size": 7}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "entireKagetsu", "label": "entireKagetsu", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Kikusuke", "label": "Kikusuke", "shape": "dot", "size": 13}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Kikunojou", "label": "Kikunojou", "shape": "dot", "size": 9}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Mai", "label": "Mai", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Pervy", "label": "Pervy", "shape": "dot", "size": 19}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Intense", "label": "Intense", "shape": "dot", "size": 8}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Akagi", "label": "Akagi", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "methat", "label": "methat", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "me", "label": "me", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "that", "label": "that", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Kikunojouwill", "label": "Kikunojouwill", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "fatherTobei", "label": "fatherTobei", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Bunzo", "label": "Bunzo", "shape": "dot", "size": 7}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Ino", "label": "Ino", "shape": "dot", "size": 17}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Shugoro", "label": "Shugoro", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Kankuro", "label": "Kankuro", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Manda", "label": "Manda", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "besomeone", "label": "besomeone", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Yurinoshinwhere", "label": "Yurinoshinwhere", "shape": "dot", "size": 7}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Chikara", "label": "Chikara", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Cricket", "label": "Cricket", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Harunawe", "label": "Harunawe", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Ninja", "label": "Ninja", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Maithe", "label": "Maithe", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Sasukewas", "label": "Sasukewas", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Oli", "label": "Oli", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "isManda", "label": "isManda", "shape": "dot", "size": 8}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "dangerousto", "label": "dangerousto", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "controland", "label": "controland", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Roger", "label": "Roger", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Ruiga", "label": "Ruiga", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Orochimaruto", "label": "Orochimaruto", "shape": "dot", "size": 8}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Sharinganas", "label": "Sharinganas", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "aboutSasuke", "label": "aboutSasuke", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Tazuna", "label": "Tazuna", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Uchiha", "label": "Uchiha", "shape": "dot", "size": 8}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Tsunadeyour", "label": "Tsunadeyour", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Shun", "label": "Shun", "shape": "dot", "size": 7}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Kunai", "label": "Kunai", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Grandfather", "label": "Grandfather", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Gamatatsu", "label": "Gamatatsu", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Fuku", "label": "Fuku", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Akatsuki", "label": "Akatsuki", "shape": "dot", "size": 7}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Chubby", "label": "Chubby", "shape": "dot", "size": 1}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Konohomaru", "label": "Konohomaru", "shape": "dot", "size": 1}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Katsuyu", "label": "Katsuyu", "shape": "dot", "size": 9}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Jiraiyaone", "label": "Jiraiyaone", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Jeez", "label": "Jeez", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Tonton", "label": "Tonton", "shape": "dot", "size": 1}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Leaf", "label": "Leaf", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Tsunadedo", "label": "Tsunadedo", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Chakrain", "label": "Chakrain", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Kabuto", "label": "Kabuto", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Humph", "label": "Humph", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "so", "label": "so", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Orochimaruis", "label": "Orochimaruis", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "OrochimaruKatsuyu", "label": "OrochimaruKatsuyu", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Senta", "label": "Senta", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Sarutobi", "label": "Sarutobi", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Sasukeare", "label": "Sasukeare", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Sentaif", "label": "Sentaif", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Yurinoshin", "label": "Yurinoshin", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "becomeHokage", "label": "becomeHokage", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Nawaki", "label": "Nawaki", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "bossJirocho", "label": "bossJirocho", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "mewhat", "label": "mewhat", "shape": "dot", "size": 1}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Dan", "label": "Dan", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Konohamaruwas", "label": "Konohamaruwas", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Zaku", "label": "Zaku", "shape": "dot", "size": 7}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Narutoare", "label": "Narutoare", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Shuriken", "label": "Shuriken", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "laterso", "label": "laterso", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Obito", "label": "Obito", "shape": "dot", "size": 8}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Fool", "label": "Fool", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Cho", "label": "Cho", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Kin", "label": "Kin", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Kazekage", "label": "Kazekage", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Ibiki", "label": "Ibiki", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Inopig", "label": "Inopig", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Brow", "label": "Brow", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Sakuraso", "label": "Sakuraso", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Temari", "label": "Temari", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Chikarafrom", "label": "Chikarafrom", "shape": "dot", "size": 1}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Toad", "label": "Toad", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Jiraiya.", "label": "Jiraiya.", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Narutoto", "label": "Narutoto", "shape": "dot", "size": 1}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "worryKikusuke", "label": "worryKikusuke", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "thatBushy", "label": "thatBushy", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Renga", "label": "Renga", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Anko", "label": "Anko", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Koharu", "label": "Koharu", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Homura", "label": "Homura", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "someonewho", "label": "someonewho", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "mourner", "label": "mourner", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Dojodisguised", "label": "Dojodisguised", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Sensei", "label": "Sensei", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "usethis", "label": "usethis", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Rock", "label": "Rock", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "bratsthey", "label": "bratsthey", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "roger", "label": "roger", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Iruka", "label": "Iruka", "shape": "dot", "size": 7}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Hayate", "label": "Hayate", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Asuma", "label": "Asuma", "shape": "dot", "size": 6}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "myselffor", "label": "myselffor", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Shinobi", "label": "Shinobi", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "youPervy", "label": "youPervy", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Dosu", "label": "Dosu", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Futabut", "label": "Futabut", "shape": "dot", "size": 1}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Kisame", "label": "Kisame", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Rogue", "label": "Rogue", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Kurenai", "label": "Kurenai", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Jiraiyaeagerly", "label": "Jiraiyaeagerly", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "ponkan", "label": "ponkan", "shape": "dot", "size": 5}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "\u2013Tsukiko?", "label": "\u2013Tsukiko?", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Ding-dong.", "label": "Ding-dong.", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "\u2013Ding-dong", "label": "\u2013Ding-dong", "shape": "dot", "size": 4}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Ding-dong-ding", "label": "Ding-dong-ding", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Ding", "label": "Ding", "shape": "dot", "size": 3}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Fourth", "label": "Fourth", "shape": "dot", "size": 2}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Leaves", "label": "Leaves", "shape": "dot", "size": 1}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Jutsuone", "label": "Jutsuone", "shape": "dot", "size": 1}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "thanlntense-Brow", "label": "thanlntense-Brow", "shape": "dot", "size": 1}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Hail", "label": "Hail", "shape": "dot", "size": 1}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "Proctor", "label": "Proctor", "shape": "dot", "size": 1}]);
+                  edges = new vis.DataSet([{"from": "Akamaru", "to": "Kiba", "value": 99, "width": 1}, {"from": "Akamaru", "to": "Naruto", "value": 24, "width": 1}, {"from": "Akamaru", "to": "Tsunade", "value": 14, "width": 1}, {"from": "Akamaru", "to": "Shino", "value": 12, "width": 1}, {"from": "Akamaru", "to": "Akamaruto", "value": 6, "width": 1}, {"from": "Akamaru", "to": "Akamarubeing", "value": 5, "width": 1}, {"from": "Akamaru", "to": "Shadow", "value": 4, "width": 1}, {"from": "Akamaru", "to": "Hokage", "value": 4, "width": 1}, {"from": "Akamaru", "to": "Sakura", "value": 3, "width": 1}, {"from": "Akamaru", "to": "\u2013", "value": 3, "width": 1}, {"from": "Akamaru", "to": "Sis", "value": 3, "width": 1}, {"from": "Akamaru", "to": "Hana", "value": 2, "width": 1}, {"from": "Akamaru", "to": "sureto", "value": 1, "width": 1}, {"from": "Akamaru", "to": "Sasuke", "value": 1, "width": 1}, {"from": "Akamaru", "to": "Narutohe", "value": 1, "width": 1}, {"from": "Kiba", "to": "Naruto", "value": 8, "width": 1}, {"from": "Kiba", "to": "Tsunade", "value": 8, "width": 1}, {"from": "Kiba", "to": "Sis", "value": 4, "width": 1}, {"from": "Kiba", "to": "Hokage", "value": 3, "width": 1}, {"from": "Kiba", "to": "\u2013", "value": 3, "width": 1}, {"from": "Kiba", "to": "Akamaruto", "value": 1, "width": 1}, {"from": "Kiba", "to": "Shadow", "value": 1, "width": 1}, {"from": "Kiba", "to": "Sakura", "value": 1, "width": 1}, {"from": "Hinata", "to": "Naruto", "value": 48, "width": 1}, {"from": "Hinata", "to": "Choji", "value": 24, "width": 1}, {"from": "Hinata", "to": "Haruna", "value": 9, "width": 1}, {"from": "Hinata", "to": "Yurinojou", "value": 9, "width": 1}, {"from": "Hinata", "to": "Janin", "value": 6, "width": 1}, {"from": "Hinata", "to": "Janinand", "value": 5, "width": 1}, {"from": "Hinata", "to": "and", "value": 5, "width": 1}, {"from": "Hinata", "to": "Ichiraku", "value": 4, "width": 1}, {"from": "Hinata", "to": "Byakugan", "value": 2, "width": 1}, {"from": "Hinata", "to": "Tsunade", "value": 2, "width": 1}, {"from": "Hinata", "to": "Hinataand", "value": 2, "width": 1}, {"from": "Hinata", "to": "Jiga", "value": 2, "width": 1}, {"from": "Hinata", "to": "Ruigaand", "value": 2, "width": 1}, {"from": "Hinata", "to": "by", "value": 1, "width": 1}, {"from": "Hinata", "to": "Sakura", "value": 1, "width": 1}, {"from": "Hinata", "to": "Onbu", "value": 1, "width": 1}, {"from": "Hinata", "to": "Ninjabe", "value": 1, "width": 1}, {"from": "Hinata", "to": "Momiji", "value": 1, "width": 1}, {"from": "Hinata", "to": "Jutsu", "value": 1, "width": 1}, {"from": "Hinata", "to": "Harunato", "value": 1, "width": 1}, {"from": "Hinata", "to": "Shikamaru", "value": 1, "width": 1}, {"from": "Hinata", "to": "methe", "value": 1, "width": 1}, {"from": "Hinata", "to": "princess", "value": 1, "width": 1}, {"from": "Naruto", "to": "Tsunade", "value": 42, "width": 1}, {"from": "Naruto", "to": "Sasuke", "value": 41, "width": 1}, {"from": "Naruto", "to": "Jiraiya", "value": 25, "width": 1}, {"from": "Naruto", "to": "Haruna", "value": 21, "width": 1}, {"from": "Naruto", "to": "Sakura", "value": 16, "width": 1}, {"from": "Naruto", "to": "Choji", "value": 14, "width": 1}, {"from": "Naruto", "to": "Onbu", "value": 12, "width": 1}, {"from": "Naruto", "to": "Shino", "value": 10, "width": 1}, {"from": "Naruto", "to": "Hokage", "value": 10, "width": 1}, {"from": "Naruto", "to": "Yurinojou", "value": 10, "width": 1}, {"from": "Naruto", "to": "Dojo", "value": 9, "width": 1}, {"from": "Naruto", "to": "Kakashi", "value": 8, "width": 1}, {"from": "Naruto", "to": "Lee", "value": 8, "width": 1}, {"from": "Naruto", "to": "thatltachi", "value": 6, "width": 1}, {"from": "Naruto", "to": "Sannin", "value": 6, "width": 1}, {"from": "Naruto", "to": "zu-ma-ki!", "value": 6, "width": 1}, {"from": "Naruto", "to": "Futa", "value": 6, "width": 1}, {"from": "Naruto", "to": "Bushy", "value": 6, "width": 1}, {"from": "Naruto", "to": "Itachi", "value": 6, "width": 1}, {"from": "Naruto", "to": "Onbaa", "value": 6, "width": 1}, {"from": "Naruto", "to": "Orochimaru", "value": 5, "width": 1}, {"from": "Naruto", "to": "Jutsu", "value": 5, "width": 1}, {"from": "Naruto", "to": "The", "value": 5, "width": 1}, {"from": "Naruto", "to": "Tsukiko", "value": 5, "width": 1}, {"from": "Naruto", "to": "Janin", "value": 5, "width": 1}, {"from": "Naruto", "to": "Chidori", "value": 5, "width": 1}, {"from": "Naruto", "to": "Guy", "value": 4, "width": 1}, {"from": "Naruto", "to": "Kagetsu", "value": 4, "width": 1}, {"from": "Naruto", "to": "Narutoin", "value": 4, "width": 1}, {"from": "Naruto", "to": "Shizune", "value": 4, "width": 1}, {"from": "Naruto", "to": "Gaara", "value": 4, "width": 1}, {"from": "Naruto", "to": "Shadow", "value": 4, "width": 1}, {"from": "Naruto", "to": "Rasengan", "value": 4, "width": 1}, {"from": "Naruto", "to": "Hinataand", "value": 4, "width": 1}, {"from": "Naruto", "to": "Konohamaru", "value": 4, "width": 1}, {"from": "Naruto", "to": "Shikamaru", "value": 3, "width": 1}, {"from": "Naruto", "to": "Gamakichi", "value": 3, "width": 1}, {"from": "Naruto", "to": "the", "value": 3, "width": 1}, {"from": "Naruto", "to": "entireKagetsu", "value": 3, "width": 1}, {"from": "Naruto", "to": "Kikusuke", "value": 3, "width": 1}, {"from": "Naruto", "to": "Kikunojou", "value": 3, "width": 1}, {"from": "Naruto", "to": "Mai", "value": 3, "width": 1}, {"from": "Naruto", "to": "Pervy", "value": 3, "width": 1}, {"from": "Naruto", "to": "Intense", "value": 2, "width": 1}, {"from": "Naruto", "to": "Akagi", "value": 2, "width": 1}, {"from": "Naruto", "to": "methat", "value": 2, "width": 1}, {"from": "Naruto", "to": "me", "value": 2, "width": 1}, {"from": "Naruto", "to": "that", "value": 2, "width": 1}, {"from": "Naruto", "to": "sureto", "value": 2, "width": 1}, {"from": "Naruto", "to": "Kikunojouwill", "value": 2, "width": 1}, {"from": "Naruto", "to": "fatherTobei", "value": 2, "width": 1}, {"from": "Naruto", "to": "Bunzo", "value": 2, "width": 1}, {"from": "Naruto", "to": "Ino", "value": 2, "width": 1}, {"from": "Naruto", "to": "Ruigaand", "value": 2, "width": 1}, {"from": "Naruto", "to": "Shugoro", "value": 2, "width": 1}, {"from": "Naruto", "to": "Kankuro", "value": 2, "width": 1}, {"from": "Naruto", "to": "Manda", "value": 2, "width": 1}, {"from": "Naruto", "to": "besomeone", "value": 2, "width": 1}, {"from": "Naruto", "to": "Yurinoshinwhere", "value": 2, "width": 1}, {"from": "Naruto", "to": "Jiga", "value": 2, "width": 1}, {"from": "Naruto", "to": "Chikara", "value": 2, "width": 1}, {"from": "Naruto", "to": "Cricket", "value": 2, "width": 1}, {"from": "Naruto", "to": "Harunawe", "value": 2, "width": 1}, {"from": "Naruto", "to": "Hana", "value": 2, "width": 1}, {"from": "Naruto", "to": "Byakugan", "value": 2, "width": 1}, {"from": "Naruto", "to": "Momiji", "value": 1, "width": 1}, {"from": "Naruto", "to": "Ninja", "value": 1, "width": 1}, {"from": "Naruto", "to": "Ninjabe", "value": 1, "width": 1}, {"from": "Naruto", "to": "Maithe", "value": 1, "width": 1}, {"from": "Naruto", "to": "Sasukewas", "value": 1, "width": 1}, {"from": "Naruto", "to": "Oli", "value": 1, "width": 1}, {"from": "Naruto", "to": "princess", "value": 1, "width": 1}, {"from": "Naruto", "to": "methe", "value": 1, "width": 1}, {"from": "Naruto", "to": "isManda", "value": 1, "width": 1}, {"from": "Naruto", "to": "dangerousto", "value": 1, "width": 1}, {"from": "Naruto", "to": "controland", "value": 1, "width": 1}, {"from": "Naruto", "to": "by", "value": 1, "width": 1}, {"from": "Naruto", "to": "\u2013", "value": 1, "width": 1}, {"from": "Naruto", "to": "and", "value": 1, "width": 1}, {"from": "Naruto", "to": "Roger", "value": 1, "width": 1}, {"from": "Naruto", "to": "Ruiga", "value": 1, "width": 1}, {"from": "Naruto", "to": "Orochimaruto", "value": 1, "width": 1}, {"from": "Naruto", "to": "Sharinganas", "value": 1, "width": 1}, {"from": "Naruto", "to": "aboutSasuke", "value": 1, "width": 1}, {"from": "Naruto", "to": "Tazuna", "value": 1, "width": 1}, {"from": "Naruto", "to": "Uchiha", "value": 1, "width": 1}, {"from": "Naruto", "to": "Tsunadeyour", "value": 1, "width": 1}, {"from": "Naruto", "to": "Shun", "value": 1, "width": 1}, {"from": "Naruto", "to": "Kunai", "value": 1, "width": 1}, {"from": "Naruto", "to": "Grandfather", "value": 1, "width": 1}, {"from": "Naruto", "to": "Gamatatsu", "value": 1, "width": 1}, {"from": "Naruto", "to": "Fuku", "value": 1, "width": 1}, {"from": "Naruto", "to": "Harunato", "value": 1, "width": 1}, {"from": "Naruto", "to": "Akatsuki", "value": 1, "width": 1}, {"from": "Naruto", "to": "Akamarubeing", "value": 1, "width": 1}, {"from": "Naruto", "to": "Chubby", "value": 1, "width": 1}, {"from": "Naruto", "to": "Konohomaru", "value": 1, "width": 1}, {"from": "Naruto", "to": "Katsuyu", "value": 1, "width": 1}, {"from": "Naruto", "to": "Ichiraku", "value": 1, "width": 1}, {"from": "Naruto", "to": "Jiraiyaone", "value": 1, "width": 1}, {"from": "Naruto", "to": "Jeez", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Orochimaru", "value": 20, "width": 1}, {"from": "Tsunade", "to": "Jiraiya", "value": 19, "width": 1}, {"from": "Tsunade", "to": "Hokage", "value": 14, "width": 1}, {"from": "Tsunade", "to": "Tonton", "value": 13, "width": 1}, {"from": "Tsunade", "to": "Shizune", "value": 7, "width": 1}, {"from": "Tsunade", "to": "Manda", "value": 7, "width": 1}, {"from": "Tsunade", "to": "Jutsu", "value": 7, "width": 1}, {"from": "Tsunade", "to": "Sannin", "value": 6, "width": 1}, {"from": "Tsunade", "to": "Katsuyu", "value": 6, "width": 1}, {"from": "Tsunade", "to": "The", "value": 5, "width": 1}, {"from": "Tsunade", "to": "Haruna", "value": 4, "width": 1}, {"from": "Tsunade", "to": "Onbaa", "value": 4, "width": 1}, {"from": "Tsunade", "to": "Bushy", "value": 4, "width": 1}, {"from": "Tsunade", "to": "Leaf", "value": 4, "width": 1}, {"from": "Tsunade", "to": "Bunzo", "value": 3, "width": 1}, {"from": "Tsunade", "to": "Tsunadedo", "value": 3, "width": 1}, {"from": "Tsunade", "to": "Chakrain", "value": 3, "width": 1}, {"from": "Tsunade", "to": "Kakashi", "value": 3, "width": 1}, {"from": "Tsunade", "to": "Kabuto", "value": 3, "width": 1}, {"from": "Tsunade", "to": "Lee", "value": 2, "width": 1}, {"from": "Tsunade", "to": "Humph", "value": 2, "width": 1}, {"from": "Tsunade", "to": "Ino", "value": 2, "width": 1}, {"from": "Tsunade", "to": "Akatsuki", "value": 2, "width": 1}, {"from": "Tsunade", "to": "so", "value": 2, "width": 1}, {"from": "Tsunade", "to": "the", "value": 2, "width": 1}, {"from": "Tsunade", "to": "isManda", "value": 2, "width": 1}, {"from": "Tsunade", "to": "Orochimaruis", "value": 2, "width": 1}, {"from": "Tsunade", "to": "Orochimaruto", "value": 2, "width": 1}, {"from": "Tsunade", "to": "OrochimaruKatsuyu", "value": 2, "width": 1}, {"from": "Tsunade", "to": "Choji", "value": 2, "width": 1}, {"from": "Tsunade", "to": "Senta", "value": 2, "width": 1}, {"from": "Tsunade", "to": "Pervy", "value": 2, "width": 1}, {"from": "Tsunade", "to": "Grandfather", "value": 2, "width": 1}, {"from": "Tsunade", "to": "Oli", "value": 2, "width": 1}, {"from": "Tsunade", "to": "Sarutobi", "value": 2, "width": 1}, {"from": "Tsunade", "to": "Momiji", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Sasukeare", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Shun", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Shino", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Sentaif", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Shadow", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Yurinoshin", "value": 1, "width": 1}, {"from": "Tsunade", "to": "becomeHokage", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Uchiha", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Tsunadeyour", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Yurinojou", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Ninja", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Nawaki", "value": 1, "width": 1}, {"from": "Tsunade", "to": "bossJirocho", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Sakura", "value": 1, "width": 1}, {"from": "Tsunade", "to": "controland", "value": 1, "width": 1}, {"from": "Tsunade", "to": "methat", "value": 1, "width": 1}, {"from": "Tsunade", "to": "mewhat", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Dojo", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Hana", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Dan", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Akagi", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Kikusuke", "value": 1, "width": 1}, {"from": "Tsunade", "to": "Konohamaruwas", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Sakura", "value": 37, "width": 1}, {"from": "Sasuke", "to": "Ino", "value": 24, "width": 1}, {"from": "Sasuke", "to": "Orochimaru", "value": 14, "width": 1}, {"from": "Sasuke", "to": "Lee", "value": 11, "width": 1}, {"from": "Sasuke", "to": "Zaku", "value": 7, "width": 1}, {"from": "Sasuke", "to": "Itachi", "value": 6, "width": 1}, {"from": "Sasuke", "to": "Kakashi", "value": 5, "width": 1}, {"from": "Sasuke", "to": "Orochimaruis", "value": 4, "width": 1}, {"from": "Sasuke", "to": "Narutoare", "value": 3, "width": 1}, {"from": "Sasuke", "to": "Hokage", "value": 2, "width": 1}, {"from": "Sasuke", "to": "Tazuna", "value": 2, "width": 1}, {"from": "Sasuke", "to": "Shuriken", "value": 2, "width": 1}, {"from": "Sasuke", "to": "Chidori", "value": 2, "width": 1}, {"from": "Sasuke", "to": "aboutSasuke", "value": 2, "width": 1}, {"from": "Sasuke", "to": "laterso", "value": 1, "width": 1}, {"from": "Sasuke", "to": "\u2013", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Shadow", "value": 1, "width": 1}, {"from": "Sasuke", "to": "thatltachi", "value": 1, "width": 1}, {"from": "Sasuke", "to": "that", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Leaf", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Sarutobi", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Obito", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Narutoin", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Narutohe", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Roger", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Fool", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Guy", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Choji", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Cho", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Kabuto", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Konohamaruwas", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Kin", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Kazekage", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Ibiki", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Inopig", "value": 1, "width": 1}, {"from": "Sasuke", "to": "Jiraiya", "value": 1, "width": 1}, {"from": "Sakura", "to": "Ino", "value": 33, "width": 1}, {"from": "Sakura", "to": "Lee", "value": 13, "width": 1}, {"from": "Sakura", "to": "Brow", "value": 5, "width": 1}, {"from": "Sakura", "to": "Gaara", "value": 4, "width": 1}, {"from": "Sakura", "to": "Narutoare", "value": 4, "width": 1}, {"from": "Sakura", "to": "Choji", "value": 3, "width": 1}, {"from": "Sakura", "to": "Kankuro", "value": 3, "width": 1}, {"from": "Sakura", "to": "aboutSasuke", "value": 3, "width": 1}, {"from": "Sakura", "to": "Sakuraso", "value": 2, "width": 1}, {"from": "Sakura", "to": "Guy", "value": 2, "width": 1}, {"from": "Sakura", "to": "Leaf", "value": 1, "width": 1}, {"from": "Sakura", "to": "Temari", "value": 1, "width": 1}, {"from": "Sakura", "to": "Zaku", "value": 1, "width": 1}, {"from": "Sakura", "to": "\u2013", "value": 1, "width": 1}, {"from": "Sakura", "to": "Pervy", "value": 1, "width": 1}, {"from": "Sakura", "to": "Shino", "value": 1, "width": 1}, {"from": "Sakura", "to": "Hana", "value": 1, "width": 1}, {"from": "Sakura", "to": "Cho", "value": 1, "width": 1}, {"from": "Ino", "to": "Kakashi", "value": 2, "width": 1}, {"from": "Ino", "to": "Pervy", "value": 2, "width": 1}, {"from": "Ino", "to": "Orochimaru", "value": 2, "width": 1}, {"from": "Ino", "to": "Lee", "value": 2, "width": 1}, {"from": "Ino", "to": "Chidori", "value": 2, "width": 1}, {"from": "Ino", "to": "Choji", "value": 2, "width": 1}, {"from": "Ino", "to": "Brow", "value": 1, "width": 1}, {"from": "Ino", "to": "Chikarafrom", "value": 1, "width": 1}, {"from": "Ino", "to": "Sakuraso", "value": 1, "width": 1}, {"from": "Ino", "to": "Narutoare", "value": 1, "width": 1}, {"from": "Ino", "to": "Kin", "value": 1, "width": 1}, {"from": "Ino", "to": "\u2013", "value": 1, "width": 1}, {"from": "Ino", "to": "Shikamaru", "value": 1, "width": 1}, {"from": "Jiraiya", "to": "Orochimaru", "value": 6, "width": 1}, {"from": "Jiraiya", "to": "Sannin", "value": 5, "width": 1}, {"from": "Jiraiya", "to": "the", "value": 5, "width": 1}, {"from": "Jiraiya", "to": "Jutsu", "value": 4, "width": 1}, {"from": "Jiraiya", "to": "Onbaa", "value": 4, "width": 1}, {"from": "Jiraiya", "to": "so", "value": 3, "width": 1}, {"from": "Jiraiya", "to": "Pervy", "value": 3, "width": 1}, {"from": "Jiraiya", "to": "Manda", "value": 3, "width": 1}, {"from": "Jiraiya", "to": "OrochimaruKatsuyu", "value": 2, "width": 1}, {"from": "Jiraiya", "to": "Rasengan", "value": 2, "width": 1}, {"from": "Jiraiya", "to": "Akatsuki", "value": 2, "width": 1}, {"from": "Jiraiya", "to": "Gamakichi", "value": 2, "width": 1}, {"from": "Jiraiya", "to": "Gamatatsu", "value": 2, "width": 1}, {"from": "Jiraiya", "to": "Hokage", "value": 1, "width": 1}, {"from": "Jiraiya", "to": "Toad", "value": 1, "width": 1}, {"from": "Jiraiya", "to": "Ninja", "value": 1, "width": 1}, {"from": "Jiraiya", "to": "Jiraiyaone", "value": 1, "width": 1}, {"from": "Jiraiya", "to": "Jiraiya.", "value": 1, "width": 1}, {"from": "Choji", "to": "Yurinojou", "value": 4, "width": 1}, {"from": "Choji", "to": "Haruna", "value": 3, "width": 1}, {"from": "Choji", "to": "Janin", "value": 2, "width": 1}, {"from": "Choji", "to": "Shikamaru", "value": 2, "width": 1}, {"from": "Choji", "to": "Byakugan", "value": 1, "width": 1}, {"from": "Choji", "to": "Narutoto", "value": 1, "width": 1}, {"from": "Choji", "to": "\u2013", "value": 1, "width": 1}, {"from": "Choji", "to": "worryKikusuke", "value": 1, "width": 1}, {"from": "Choji", "to": "thatBushy", "value": 1, "width": 1}, {"from": "Choji", "to": "dangerousto", "value": 1, "width": 1}, {"from": "Choji", "to": "and", "value": 1, "width": 1}, {"from": "Choji", "to": "The", "value": 1, "width": 1}, {"from": "Choji", "to": "Shun", "value": 1, "width": 1}, {"from": "Choji", "to": "Ninjabe", "value": 1, "width": 1}, {"from": "Choji", "to": "Momiji", "value": 1, "width": 1}, {"from": "Choji", "to": "Leaf", "value": 1, "width": 1}, {"from": "Choji", "to": "Kikusuke", "value": 1, "width": 1}, {"from": "Choji", "to": "Janinand", "value": 1, "width": 1}, {"from": "Choji", "to": "Intense", "value": 1, "width": 1}, {"from": "Choji", "to": "Hinataand", "value": 1, "width": 1}, {"from": "Choji", "to": "Dojo", "value": 1, "width": 1}, {"from": "Choji", "to": "Cho", "value": 1, "width": 1}, {"from": "Haruna", "to": "Kikunojou", "value": 15, "width": 1}, {"from": "Haruna", "to": "Kikunojouwill", "value": 5, "width": 1}, {"from": "Haruna", "to": "Harunawe", "value": 5, "width": 1}, {"from": "Haruna", "to": "Shizune", "value": 4, "width": 1}, {"from": "Haruna", "to": "Ruigaand", "value": 4, "width": 1}, {"from": "Haruna", "to": "Jiga", "value": 4, "width": 1}, {"from": "Haruna", "to": "Kikusuke", "value": 3, "width": 1}, {"from": "Haruna", "to": "Yurinojou", "value": 3, "width": 1}, {"from": "Haruna", "to": "Jutsu", "value": 3, "width": 1}, {"from": "Haruna", "to": "Yurinoshinwhere", "value": 2, "width": 1}, {"from": "Haruna", "to": "sureto", "value": 1, "width": 1}, {"from": "Haruna", "to": "princess", "value": 1, "width": 1}, {"from": "Haruna", "to": "methe", "value": 1, "width": 1}, {"from": "Haruna", "to": "by", "value": 1, "width": 1}, {"from": "Haruna", "to": "Ruiga", "value": 1, "width": 1}, {"from": "Haruna", "to": "Renga", "value": 1, "width": 1}, {"from": "Haruna", "to": "Jeez", "value": 1, "width": 1}, {"from": "Haruna", "to": "Harunato", "value": 1, "width": 1}, {"from": "Orochimaru", "to": "Manda", "value": 15, "width": 1}, {"from": "Orochimaru", "to": "Sarutobi", "value": 11, "width": 1}, {"from": "Orochimaru", "to": "Hokage", "value": 8, "width": 1}, {"from": "Orochimaru", "to": "Kabuto", "value": 5, "width": 1}, {"from": "Orochimaru", "to": "Jutsu", "value": 5, "width": 1}, {"from": "Orochimaru", "to": "isManda", "value": 5, "width": 1}, {"from": "Orochimaru", "to": "Shizune", "value": 5, "width": 1}, {"from": "Orochimaru", "to": "Katsuyu", "value": 4, "width": 1}, {"from": "Orochimaru", "to": "Orochimaruto", "value": 4, "width": 1}, {"from": "Orochimaru", "to": "laterso", "value": 3, "width": 1}, {"from": "Orochimaru", "to": "Itachi", "value": 3, "width": 1}, {"from": "Orochimaru", "to": "Ninja", "value": 3, "width": 1}, {"from": "Orochimaru", "to": "Kazekage", "value": 3, "width": 1}, {"from": "Orochimaru", "to": "Kakashi", "value": 2, "width": 1}, {"from": "Orochimaru", "to": "Tsunadedo", "value": 2, "width": 1}, {"from": "Orochimaru", "to": "Rasengan", "value": 2, "width": 1}, {"from": "Orochimaru", "to": "OrochimaruKatsuyu", "value": 2, "width": 1}, {"from": "Orochimaru", "to": "Oli", "value": 1, "width": 1}, {"from": "Orochimaru", "to": "Lee", "value": 1, "width": 1}, {"from": "Orochimaru", "to": "Sannin", "value": 1, "width": 1}, {"from": "Orochimaru", "to": "Pervy", "value": 1, "width": 1}, {"from": "Orochimaru", "to": "Guy", "value": 1, "width": 1}, {"from": "Orochimaru", "to": "Chakrain", "value": 1, "width": 1}, {"from": "Orochimaru", "to": "Anko", "value": 1, "width": 1}, {"from": "Orochimaru", "to": "Koharu", "value": 1, "width": 1}, {"from": "Orochimaru", "to": "Homura", "value": 1, "width": 1}, {"from": "Manda", "to": "Orochimaruto", "value": 4, "width": 1}, {"from": "Manda", "to": "isManda", "value": 4, "width": 1}, {"from": "Manda", "to": "Jutsu", "value": 4, "width": 1}, {"from": "Manda", "to": "OrochimaruKatsuyu", "value": 3, "width": 1}, {"from": "Manda", "to": "Katsuyu", "value": 3, "width": 1}, {"from": "Manda", "to": "Shizune", "value": 2, "width": 1}, {"from": "Kikunojou", "to": "Kikunojouwill", "value": 2, "width": 1}, {"from": "Kikunojou", "to": "Shizune", "value": 2, "width": 1}, {"from": "Kikunojou", "to": "Harunawe", "value": 2, "width": 1}, {"from": "Kikunojou", "to": "Yurinoshinwhere", "value": 1, "width": 1}, {"from": "Kikunojou", "to": "Kikusuke", "value": 1, "width": 1}, {"from": "Kikunojou", "to": "Jutsu", "value": 1, "width": 1}, {"from": "Kikunojou", "to": "Jeez", "value": 1, "width": 1}, {"from": "Hokage", "to": "laterso", "value": 3, "width": 1}, {"from": "Hokage", "to": "becomeHokage", "value": 2, "width": 1}, {"from": "Hokage", "to": "Anko", "value": 2, "width": 1}, {"from": "Hokage", "to": "Konohamaru", "value": 2, "width": 1}, {"from": "Hokage", "to": "Akagi", "value": 1, "width": 1}, {"from": "Hokage", "to": "Guy", "value": 1, "width": 1}, {"from": "Hokage", "to": "Futa", "value": 1, "width": 1}, {"from": "Hokage", "to": "Akamarubeing", "value": 1, "width": 1}, {"from": "Hokage", "to": "\u2013", "value": 1, "width": 1}, {"from": "Hokage", "to": "someonewho", "value": 1, "width": 1}, {"from": "Hokage", "to": "mourner", "value": 1, "width": 1}, {"from": "Hokage", "to": "controland", "value": 1, "width": 1}, {"from": "Hokage", "to": "Tsunadeyour", "value": 1, "width": 1}, {"from": "Hokage", "to": "Sis", "value": 1, "width": 1}, {"from": "Hokage", "to": "Sasukeare", "value": 1, "width": 1}, {"from": "Hokage", "to": "Roger", "value": 1, "width": 1}, {"from": "Hokage", "to": "Kakashi", "value": 1, "width": 1}, {"from": "Lee", "to": "Dojo", "value": 12, "width": 1}, {"from": "Lee", "to": "Guy", "value": 10, "width": 1}, {"from": "Lee", "to": "Dojodisguised", "value": 5, "width": 1}, {"from": "Lee", "to": "Bushy", "value": 5, "width": 1}, {"from": "Lee", "to": "Narutoare", "value": 4, "width": 1}, {"from": "Lee", "to": "Sensei", "value": 4, "width": 1}, {"from": "Lee", "to": "methat", "value": 3, "width": 1}, {"from": "Lee", "to": "usethis", "value": 3, "width": 1}, {"from": "Lee", "to": "\u2013", "value": 3, "width": 1}, {"from": "Lee", "to": "Shikamaru", "value": 3, "width": 1}, {"from": "Lee", "to": "Jutsu", "value": 2, "width": 1}, {"from": "Lee", "to": "Rock", "value": 1, "width": 1}, {"from": "Lee", "to": "Tazuna", "value": 1, "width": 1}, {"from": "Lee", "to": "bratsthey", "value": 1, "width": 1}, {"from": "Lee", "to": "Cricket", "value": 1, "width": 1}, {"from": "Lee", "to": "Kin", "value": 1, "width": 1}, {"from": "Lee", "to": "Intense", "value": 1, "width": 1}, {"from": "Shino", "to": "Futa", "value": 4, "width": 1}, {"from": "Shino", "to": "Mai", "value": 4, "width": 1}, {"from": "Shino", "to": "Kagetsu", "value": 3, "width": 1}, {"from": "Shino", "to": "besomeone", "value": 2, "width": 1}, {"from": "Shino", "to": "entireKagetsu", "value": 2, "width": 1}, {"from": "Shino", "to": "fatherTobei", "value": 1, "width": 1}, {"from": "Shino", "to": "Maithe", "value": 1, "width": 1}, {"from": "Shino", "to": "Shadow", "value": 1, "width": 1}, {"from": "Shino", "to": "Hana", "value": 1, "width": 1}, {"from": "Dojo", "to": "Intense", "value": 5, "width": 1}, {"from": "Dojo", "to": "Bushy", "value": 3, "width": 1}, {"from": "Dojo", "to": "Dojodisguised", "value": 3, "width": 1}, {"from": "Dojo", "to": "Rock", "value": 3, "width": 1}, {"from": "Dojo", "to": "Guy", "value": 2, "width": 1}, {"from": "Dojo", "to": "methat", "value": 2, "width": 1}, {"from": "Dojo", "to": "thatBushy", "value": 1, "width": 1}, {"from": "Dojo", "to": "roger", "value": 1, "width": 1}, {"from": "Dojo", "to": "me", "value": 1, "width": 1}, {"from": "Dojo", "to": "Shikamaru", "value": 1, "width": 1}, {"from": "Onbu", "to": "zu-ma-ki!", "value": 1, "width": 1}, {"from": "Onbu", "to": "Onbaa", "value": 1, "width": 1}, {"from": "Onbu", "to": "Shadow", "value": 1, "width": 1}, {"from": "Onbu", "to": "Ichiraku", "value": 1, "width": 1}, {"from": "Sarutobi", "to": "Ninja", "value": 2, "width": 1}, {"from": "Sarutobi", "to": "Kabuto", "value": 2, "width": 1}, {"from": "Sarutobi", "to": "Kazekage", "value": 2, "width": 1}, {"from": "Sarutobi", "to": "Pervy", "value": 2, "width": 1}, {"from": "Sarutobi", "to": "Oli", "value": 1, "width": 1}, {"from": "Sarutobi", "to": "Kakashi", "value": 1, "width": 1}, {"from": "Sarutobi", "to": "Itachi", "value": 1, "width": 1}, {"from": "Yurinojou", "to": "The", "value": 1, "width": 1}, {"from": "Yurinojou", "to": "Shikamaru", "value": 1, "width": 1}, {"from": "Yurinojou", "to": "Renga", "value": 1, "width": 1}, {"from": "Yurinojou", "to": "Jutsu", "value": 1, "width": 1}, {"from": "Yurinojou", "to": "Hinataand", "value": 1, "width": 1}, {"from": "Yurinojou", "to": "Janin", "value": 1, "width": 1}, {"from": "Guy", "to": "Intense", "value": 1, "width": 1}, {"from": "Guy", "to": "Dojodisguised", "value": 1, "width": 1}, {"from": "Guy", "to": "Shikamaru", "value": 1, "width": 1}, {"from": "Guy", "to": "Cricket", "value": 1, "width": 1}, {"from": "Kakashi", "to": "Obito", "value": 3, "width": 1}, {"from": "Kakashi", "to": "Iruka", "value": 2, "width": 1}, {"from": "Kakashi", "to": "Itachi", "value": 2, "width": 1}, {"from": "Kakashi", "to": "Sasukeare", "value": 2, "width": 1}, {"from": "Kakashi", "to": "Hayate", "value": 2, "width": 1}, {"from": "Kakashi", "to": "Chidori", "value": 2, "width": 1}, {"from": "Kakashi", "to": "Fool", "value": 1, "width": 1}, {"from": "Kakashi", "to": "Asuma", "value": 1, "width": 1}, {"from": "Kakashi", "to": "myselffor", "value": 1, "width": 1}, {"from": "Kakashi", "to": "The", "value": 1, "width": 1}, {"from": "Kakashi", "to": "Shinobi", "value": 1, "width": 1}, {"from": "Kakashi", "to": "Shadow", "value": 1, "width": 1}, {"from": "Kakashi", "to": "Narutoin", "value": 1, "width": 1}, {"from": "Kakashi", "to": "Kazekage", "value": 1, "width": 1}, {"from": "Kakashi", "to": "Kabuto", "value": 1, "width": 1}, {"from": "Kakashi", "to": "thatltachi", "value": 1, "width": 1}, {"from": "Kakashi", "to": "youPervy", "value": 1, "width": 1}, {"from": "Kakashi", "to": "Akagi", "value": 1, "width": 1}, {"from": "Zaku", "to": "Shuriken", "value": 1, "width": 1}, {"from": "Zaku", "to": "Shikamaru", "value": 1, "width": 1}, {"from": "Zaku", "to": "Orochimaruis", "value": 1, "width": 1}, {"from": "Zaku", "to": "Kunai", "value": 1, "width": 1}, {"from": "Zaku", "to": "Dosu", "value": 1, "width": 1}, {"from": "Shizune", "to": "Sentaif", "value": 2, "width": 1}, {"from": "Shizune", "to": "bossJirocho", "value": 2, "width": 1}, {"from": "Shizune", "to": "Bunzo", "value": 2, "width": 1}, {"from": "Shizune", "to": "Tsunadedo", "value": 1, "width": 1}, {"from": "Shizune", "to": "isManda", "value": 1, "width": 1}, {"from": "Shizune", "to": "Orochimaruto", "value": 1, "width": 1}, {"from": "Shizune", "to": "Sannin", "value": 1, "width": 1}, {"from": "Shizune", "to": "Harunawe", "value": 1, "width": 1}, {"from": "Shizune", "to": "Kabuto", "value": 1, "width": 1}, {"from": "Shizune", "to": "Jutsu", "value": 1, "width": 1}, {"from": "Shizune", "to": "Kikunojouwill", "value": 1, "width": 1}, {"from": "Shizune", "to": "Katsuyu", "value": 1, "width": 1}, {"from": "Jutsu", "to": "so", "value": 2, "width": 1}, {"from": "Jutsu", "to": "isManda", "value": 2, "width": 1}, {"from": "Jutsu", "to": "by", "value": 2, "width": 1}, {"from": "Jutsu", "to": "Grandfather", "value": 1, "width": 1}, {"from": "Jutsu", "to": "Harunato", "value": 1, "width": 1}, {"from": "Jutsu", "to": "Akatsuki", "value": 1, "width": 1}, {"from": "Jutsu", "to": "Chidori", "value": 1, "width": 1}, {"from": "Jutsu", "to": "usethis", "value": 1, "width": 1}, {"from": "Jutsu", "to": "the", "value": 1, "width": 1}, {"from": "Jutsu", "to": "princess", "value": 1, "width": 1}, {"from": "Jutsu", "to": "methe", "value": 1, "width": 1}, {"from": "Jutsu", "to": "Yurinoshinwhere", "value": 1, "width": 1}, {"from": "Jutsu", "to": "Uchiha", "value": 1, "width": 1}, {"from": "Jutsu", "to": "Sannin", "value": 1, "width": 1}, {"from": "Jutsu", "to": "Pervy", "value": 1, "width": 1}, {"from": "Jutsu", "to": "Orochimaruto", "value": 1, "width": 1}, {"from": "Jutsu", "to": "Kikusuke", "value": 1, "width": 1}, {"from": "Jutsu", "to": "Katsuyu", "value": 1, "width": 1}, {"from": "Jutsu", "to": "Jeez", "value": 1, "width": 1}, {"from": "thatltachi", "to": "Narutoin", "value": 1, "width": 1}, {"from": "thatltachi", "to": "Itachi", "value": 1, "width": 1}, {"from": "Sannin", "to": "Uchiha", "value": 1, "width": 1}, {"from": "Sannin", "to": "Pervy", "value": 1, "width": 1}, {"from": "Sannin", "to": "Katsuyu", "value": 1, "width": 1}, {"from": "Sannin", "to": "Humph", "value": 1, "width": 1}, {"from": "Futa", "to": "Kagetsu", "value": 4, "width": 1}, {"from": "Futa", "to": "entireKagetsu", "value": 3, "width": 1}, {"from": "Futa", "to": "someonewho", "value": 2, "width": 1}, {"from": "Futa", "to": "mourner", "value": 2, "width": 1}, {"from": "Futa", "to": "fatherTobei", "value": 2, "width": 1}, {"from": "Futa", "to": "Futabut", "value": 1, "width": 1}, {"from": "Janin", "to": "and", "value": 2, "width": 1}, {"from": "Janin", "to": "Hinataand", "value": 1, "width": 1}, {"from": "Janin", "to": "The", "value": 1, "width": 1}, {"from": "Bushy", "to": "methat", "value": 2, "width": 1}, {"from": "Bushy", "to": "me", "value": 1, "width": 1}, {"from": "Katsuyu", "to": "Orochimaruto", "value": 1, "width": 1}, {"from": "Katsuyu", "to": "isManda", "value": 1, "width": 1}, {"from": "Itachi", "to": "Kisame", "value": 3, "width": 1}, {"from": "Itachi", "to": "Rogue", "value": 3, "width": 1}, {"from": "Itachi", "to": "Asuma", "value": 3, "width": 1}, {"from": "Itachi", "to": "Humph", "value": 2, "width": 1}, {"from": "Itachi", "to": "Kurenai", "value": 2, "width": 1}, {"from": "Itachi", "to": "Uchiha", "value": 2, "width": 1}, {"from": "Itachi", "to": "Pervy", "value": 1, "width": 1}, {"from": "Itachi", "to": "Narutoin", "value": 1, "width": 1}, {"from": "Itachi", "to": "Kazekage", "value": 1, "width": 1}, {"from": "Itachi", "to": "Kabuto", "value": 1, "width": 1}, {"from": "Onbaa", "to": "Jiraiyaeagerly", "value": 3, "width": 1}, {"from": "Onbaa", "to": "The", "value": 2, "width": 1}, {"from": "Kabuto", "to": "Kazekage", "value": 2, "width": 1}, {"from": "Kabuto", "to": "Tsunadedo", "value": 1, "width": 1}, {"from": "Kabuto", "to": "Oli", "value": 1, "width": 1}, {"from": "Dojodisguised", "to": "methat", "value": 1, "width": 1}, {"from": "Dojodisguised", "to": "Shikamaru", "value": 1, "width": 1}, {"from": "Intense", "to": "Rock", "value": 2, "width": 1}, {"from": "Intense", "to": "thatBushy", "value": 1, "width": 1}, {"from": "Intense", "to": "roger", "value": 1, "width": 1}, {"from": "Kikunojouwill", "to": "Harunawe", "value": 1, "width": 1}, {"from": "isManda", "to": "Orochimaruto", "value": 1, "width": 1}, {"from": "The", "to": "Obito", "value": 1, "width": 1}, {"from": "The", "to": "Hayate", "value": 1, "width": 1}, {"from": "The", "to": "Hinataand", "value": 1, "width": 1}, {"from": "The", "to": "Jiraiyaeagerly", "value": 1, "width": 1}, {"from": "The", "to": "Iruka", "value": 1, "width": 1}, {"from": "Tsukiko", "to": "the", "value": 1, "width": 1}, {"from": "Tsukiko", "to": "ponkan", "value": 1, "width": 1}, {"from": "Tsukiko", "to": "Mai", "value": 1, "width": 1}, {"from": "Tsukiko", "to": "\u2013Tsukiko?", "value": 1, "width": 1}, {"from": "the", "to": "Akatsuki", "value": 1, "width": 1}, {"from": "the", "to": "so", "value": 1, "width": 1}, {"from": "Chidori", "to": "that", "value": 1, "width": 1}, {"from": "Akamarubeing", "to": "\u2013", "value": 1, "width": 1}, {"from": "Ruigaand", "to": "Jiga", "value": 2, "width": 1}, {"from": "Ding-dong.", "to": "\u2013Ding-dong", "value": 4, "width": 1}, {"from": "Ding-dong.", "to": "ponkan", "value": 2, "width": 1}, {"from": "Ding-dong.", "to": "Ding-dong-ding", "value": 2, "width": 1}, {"from": "Ding-dong.", "to": "Ding", "value": 2, "width": 1}, {"from": "\u2013Ding-dong", "to": "Ding", "value": 2, "width": 1}, {"from": "\u2013Ding-dong", "to": "Ding-dong-ding", "value": 2, "width": 1}, {"from": "\u2013Ding-dong", "to": "ponkan", "value": 1, "width": 1}, {"from": "Orochimaruis", "to": "Uchiha", "value": 1, "width": 1}, {"from": "Shadow", "to": "Kin", "value": 1, "width": 1}, {"from": "Kagetsu", "to": "entireKagetsu", "value": 2, "width": 1}, {"from": "Kagetsu", "to": "fatherTobei", "value": 1, "width": 1}, {"from": "Gaara", "to": "Kankuro", "value": 2, "width": 1}, {"from": "Mai", "to": "\u2013Tsukiko?", "value": 1, "width": 1}, {"from": "Mai", "to": "ponkan", "value": 1, "width": 1}, {"from": "Mai", "to": "Maithe", "value": 1, "width": 1}, {"from": "Sensei", "to": "Rock", "value": 2, "width": 1}, {"from": "Sensei", "to": "bratsthey", "value": 1, "width": 1}, {"from": "Sis", "to": "\u2013", "value": 1, "width": 1}, {"from": "Shikamaru", "to": "roger", "value": 1, "width": 1}, {"from": "Shikamaru", "to": "Ninja", "value": 1, "width": 1}, {"from": "Shikamaru", "to": "Dosu", "value": 1, "width": 1}, {"from": "Shikamaru", "to": "Kin", "value": 1, "width": 1}, {"from": "Bunzo", "to": "Senta", "value": 2, "width": 1}, {"from": "Bunzo", "to": "Shugoro", "value": 2, "width": 1}, {"from": "Bunzo", "to": "Sentaif", "value": 2, "width": 1}, {"from": "Bunzo", "to": "bossJirocho", "value": 1, "width": 1}, {"from": "Gamakichi", "to": "Gamatatsu", "value": 1, "width": 1}, {"from": "Jiraiya.", "to": "Pervy", "value": 3, "width": 1}, {"from": "Jiraiya.", "to": "Fourth", "value": 1, "width": 1}, {"from": "Pervy", "to": "Toad", "value": 3, "width": 1}, {"from": "Pervy", "to": "Uchiha", "value": 2, "width": 1}, {"from": "Pervy", "to": "Fourth", "value": 2, "width": 1}, {"from": "Pervy", "to": "Oli", "value": 2, "width": 1}, {"from": "Pervy", "to": "Nawaki", "value": 1, "width": 1}, {"from": "Pervy", "to": "youPervy", "value": 1, "width": 1}, {"from": "Pervy", "to": "Fuku", "value": 1, "width": 1}, {"from": "Pervy", "to": "Dan", "value": 1, "width": 1}, {"from": "entireKagetsu", "to": "fatherTobei", "value": 1, "width": 1}, {"from": "so", "to": "Akatsuki", "value": 1, "width": 1}, {"from": "Rock", "to": "bratsthey", "value": 3, "width": 1}, {"from": "Kikusuke", "to": "Yurinoshinwhere", "value": 3, "width": 1}, {"from": "Kikusuke", "to": "sureto", "value": 3, "width": 1}, {"from": "Kikusuke", "to": "Yurinoshin", "value": 1, "width": 1}, {"from": "Kikusuke", "to": "Shun", "value": 1, "width": 1}, {"from": "Kikusuke", "to": "Ruiga", "value": 1, "width": 1}, {"from": "Kikusuke", "to": "Momiji", "value": 1, "width": 1}, {"from": "Kikusuke", "to": "Jeez", "value": 1, "width": 1}, {"from": "Kisame", "to": "Asuma", "value": 2, "width": 1}, {"from": "Kisame", "to": "Rogue", "value": 1, "width": 1}, {"from": "Kisame", "to": "Kurenai", "value": 1, "width": 1}, {"from": "Kisame", "to": "Humph", "value": 1, "width": 1}, {"from": "Rogue", "to": "Kurenai", "value": 1, "width": 1}, {"from": "Rogue", "to": "Asuma", "value": 1, "width": 1}, {"from": "Rogue", "to": "Humph", "value": 1, "width": 1}, {"from": "Hayate", "to": "Iruka", "value": 3, "width": 1}, {"from": "Hayate", "to": "Shinobi", "value": 2, "width": 1}, {"from": "Hayate", "to": "Obito", "value": 2, "width": 1}, {"from": "Hayate", "to": "myselffor", "value": 2, "width": 1}, {"from": "Iruka", "to": "Obito", "value": 2, "width": 1}, {"from": "Iruka", "to": "Shinobi", "value": 2, "width": 1}, {"from": "Iruka", "to": "myselffor", "value": 2, "width": 1}, {"from": "Iruka", "to": "Leaves", "value": 1, "width": 1}, {"from": "Asuma", "to": "Kurenai", "value": 2, "width": 1}, {"from": "Asuma", "to": "Humph", "value": 1, "width": 1}, {"from": "Kankuro", "to": "Temari", "value": 2, "width": 1}, {"from": "\u2013", "to": "Cho", "value": 1, "width": 1}, {"from": "\u2013", "to": "Kin", "value": 1, "width": 1}, {"from": "Obito", "to": "Shinobi", "value": 1, "width": 1}, {"from": "Obito", "to": "myselffor", "value": 1, "width": 1}, {"from": "Obito", "to": "Fool", "value": 1, "width": 1}, {"from": "Yurinoshinwhere", "to": "sureto", "value": 1, "width": 1}, {"from": "Yurinoshinwhere", "to": "Jeez", "value": 1, "width": 1}, {"from": "sureto", "to": "Ruiga", "value": 1, "width": 1}, {"from": "Akagi", "to": "Sasukeare", "value": 1, "width": 1}, {"from": "Shinobi", "to": "myselffor", "value": 1, "width": 1}, {"from": "becomeHokage", "to": "controland", "value": 1, "width": 1}, {"from": "becomeHokage", "to": "Tsunadeyour", "value": 1, "width": 1}, {"from": "Homura", "to": "Koharu", "value": 2, "width": 1}, {"from": "Akatsuki", "to": "Gamatatsu", "value": 1, "width": 1}, {"from": "Anko", "to": "Roger", "value": 1, "width": 1}, {"from": "methe", "to": "princess", "value": 2, "width": 1}, {"from": "methe", "to": "by", "value": 1, "width": 1}, {"from": "methe", "to": "Harunato", "value": 1, "width": 1}, {"from": "princess", "to": "by", "value": 1, "width": 1}, {"from": "princess", "to": "Harunato", "value": 1, "width": 1}, {"from": "by", "to": "Harunato", "value": 1, "width": 1}, {"from": "Uchiha", "to": "Jutsuone", "value": 1, "width": 1}, {"from": "mourner", "to": "someonewho", "value": 2, "width": 1}, {"from": "Shun", "to": "worryKikusuke", "value": 2, "width": 1}, {"from": "Shun", "to": "Momiji", "value": 1, "width": 1}, {"from": "Shun", "to": "Yurinoshin", "value": 1, "width": 1}, {"from": "Sentaif", "to": "bossJirocho", "value": 1, "width": 1}, {"from": "Chikara", "to": "thanlntense-Brow", "value": 2, "width": 1}, {"from": "Chikara", "to": "Fuku", "value": 1, "width": 1}, {"from": "Chikara", "to": "Hail", "value": 1, "width": 1}, {"from": "ponkan", "to": "\u2013Tsukiko?", "value": 1, "width": 1}, {"from": "Ding-dong-ding", "to": "Ding", "value": 1, "width": 1}, {"from": "Dan", "to": "Nawaki", "value": 2, "width": 1}, {"from": "Momiji", "to": "Yurinoshin", "value": 1, "width": 1}, {"from": "Sasukewas", "to": "Sharinganas", "value": 1, "width": 1}, {"from": "Kunai", "to": "Proctor", "value": 1, "width": 1}, {"from": "Tsunadeyour", "to": "controland", "value": 1, "width": 1}, {"from": "Fool", "to": "Konohamaruwas", "value": 1, "width": 1}, {"from": "Ibiki", "to": "Inopig", "value": 1, "width": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
