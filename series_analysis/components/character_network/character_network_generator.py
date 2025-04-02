@@ -36,7 +36,7 @@ class CharacterNetworkGenerator():
     
     def draw_network_graph(self,relationship_df):
         relationship_df = relationship_df.sort_values('value', ascending=False)
-        relationship_df = relationship_df.head(200)
+        #relationship_df = relationship_df.head(200)
 
         G = nx.from_pandas_edgelist(
             relationship_df, 
